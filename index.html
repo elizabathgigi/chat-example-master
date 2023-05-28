@@ -18,7 +18,10 @@
   <body>
     <ul id="messages"></ul>
     <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
+      <!--<input id="input" autocomplete="off" />   -->  
+      <button id = 'stone'>stone</button>
+      <button id = 'paper'>paper</button>
+      <button id = 'scissors'>scissors</button>
     </form>
     <script src="/socket.io/socket.io.js"></script>
 
@@ -28,6 +31,33 @@
       var messages = document.getElementById('messages');
       var form = document.getElementById('form');
       var input = document.getElementById('input');
+      const btnstone = document.getElementById('stone');
+      const btnpaper = document.getElementById('paper');
+      const btnscissors = document.getElementById('scissors');
+
+
+      btnstone.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+          socket.emit('chat message', 'stone');
+        
+      });
+
+      btnpaper.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+          socket.emit('chat message', 'paper');
+        
+      });
+
+      btnscissors.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+          socket.emit('chat message', 'scissors');
+        
+      });
+
+
 
       form.addEventListener('submit', function(e) {
         e.preventDefault();
