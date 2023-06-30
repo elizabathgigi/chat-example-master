@@ -3,6 +3,11 @@
   <head>
     <title>stone paper sissors</title>
     <style>
+      #videoElement {
+        background: rgba(0, 0, 0, 0.15);
+                width: 640px;
+                height: 480px;
+            }
       body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
       #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
@@ -14,8 +19,134 @@
       #messages > li { padding: 0.5rem 1rem; }
       #messages > li:nth-child(odd) { background: #efefef; }
     </style>
+    
   </head>
   <body>
+    <h1>Rock Paper Scissors Hand Game</h1>
+    <video id="videoElement" autoplay></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+        <script>
+        
+        // Function to draw landmarks on the canvas overlay
+function drawLandmarks(landmarks, canvasCtx) {
+    for (let i = 0; i < landmarks.length; i++) {
+        const x = landmarks[i].x * canvasCtx.canvas.width;
+        const y = landmarks[i].y * canvasCtx.canvas.height;
+        canvasCtx.beginPath();
+        canvasCtx.arc(x, y, 5, 0, 2 * Math.PI);
+        canvasCtx.fillStyle = 'red';
+        canvasCtx.fill();
+    }
+}
+        
+        // Function to start the game
+          function startGame() {
+              // Create a new Hands object
+              const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+              hands.setOptions({
+                  selfieMode: true,
+                  maxNumHands: 1,
+                  minDetectionConfidence: 0.8,
+                  minTrackingConfidence: 0.5
+              });
+          
+              // Initialize the video element and canvas
+              const videoElement = document.getElementById('videoElement');
+              const canvasElement = document.getElementById('canvas');
+              const canvasCtx = canvasElement.getContext('2d');
+          
+              // Initialize the game variables
+              let currentGesture = null;
+              let previousGesture = null;
+          
+              // Run hand detection
+              hands.onResults((results) => {
+                  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                  canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+                  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                      const landmarks = results.multiHandLandmarks[0];
+                      const gesture = classifyGesture(landmarks);
+                      if (gesture !== currentGesture) {
+                          previousGesture = currentGesture;
+                          currentGesture = gesture;
+                          if (previousGesture !== null) {
+                              console.log('Previous Gesture:', previousGesture);
+                          }
+                          console.log('Current Gesture:', currentGesture);
+                          // TODO: Implement game logic based on the gesture
+                      }
+                  }
+              });
+          
+              // Initialize the camera
+              navigator.mediaDevices.getUserMedia({video: true}).then((stream) => {
+                  videoElement.srcObject = stream;
+                  videoElement.onloadedmetadata = () => {
+                      videoElement.play();
+                      requestAnimationFrame(detectHands);
+                  };
+              });
+          
+              // Function to detect hands
+              function detectHands() {
+                  hands.send({image: videoElement});
+                  requestAnimationFrame(detectHands);
+              }
+          
+              // Function to classify the hand gesture
+              function classifyGesture(landmarks) {
+    // Get the relevant landmarks for classification
+    const thumbTip = landmarks[4];
+    const indexTip = landmarks[8];
+    const middleTip = landmarks[12];
+    const ringTip = landmarks[16];
+    const pinkyTip = landmarks[20];
+
+    // Calculate the distances between fingers
+    const thumbIndexDist = calculateDistance(thumbTip, indexTip);
+    const indexMiddleDist = calculateDistance(indexTip, middleTip);
+    const middleRingDist = calculateDistance(middleTip, ringTip);
+    const ringPinkyDist = calculateDistance(ringTip, pinkyTip);
+
+    // Define classification thresholds
+    const fingerSpacingThreshold = 0.03;
+    const closedFistThreshold = 0.02;
+
+    // Classify gestures based on distances
+    if (thumbIndexDist < fingerSpacingThreshold &&
+        indexMiddleDist < fingerSpacingThreshold &&
+        middleRingDist < fingerSpacingThreshold &&
+        ringPinkyDist < fingerSpacingThreshold) {
+        return 'rock';
+    } else if (thumbIndexDist > closedFistThreshold &&
+        indexMiddleDist > closedFistThreshold &&
+        middleRingDist > closedFistThreshold &&
+        ringPinkyDist > closedFistThreshold) {
+        return 'paper';
+    } else if (thumbIndexDist > fingerSpacingThreshold &&
+        indexMiddleDist < fingerSpacingThreshold &&
+        middleRingDist < fingerSpacingThreshold &&
+        ringPinkyDist > fingerSpacingThreshold) {
+        return 'scissors';
+    }
+
+    return 'unknown';
+}
+
+// Function to calculate the Euclidean distance between two landmarks
+function calculateDistance(landmark1, landmark2) {
+    const xDiff = landmark1.x - landmark2.x;
+    const yDiff = landmark1.y - landmark2.y;
+    const zDiff = landmark1.z - landmark2.z;
+    return Math.sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
+}
+
+          }
+          
+          // Start the game when the page is loaded
+          window.addEventListener('DOMContentLoaded', startGame);
+          </script>
     <ul id="messages"></ul>
     <form id="form" action="">
       <!--<input id="input" autocomplete="off" />   -->  
@@ -73,6 +204,20 @@
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
       });
+          // Clear the canvas
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+// Draw the video frame
+canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    const landmarks = results.multiHandLandmarks[0];
+    // Draw the landmarks on the canvas overlay
+    drawLandmarks(landmarks, canvasCtx);
+}
     </script>
+    <canvas id="canvas" width="640" height="480"></canvas>
+
   </body>
 </html>
+
